@@ -18,25 +18,26 @@ func sigmoidDerivative(x float64) float64 {
 }
 
 type Neuron struct {
-	Weights       []float64
-	Bias          float64
-	Output        float64
-	Delta         float64
-	WeightsPoints []plotter.XYs
-	PreviousWeightUpdates []float64
-	PreviousBiasUpdate   float64
+	Weights       				[]float64
+	Bias          				float64
+	Output        				float64
+	Delta         				float64
+	PreviousWeightUpdates	[]float64
+	PreviousBiasUpdate   	float64
+
+	WeightsPoints 				[]plotter.XYs
 }
 
 type Layer struct {
 	Neurons         []Neuron
-	MsePoints       plotter.XYs
-	EpochMsePoints  plotter.XYs
 	Momentum     	 float64
+
+	MsePoints       plotter.XYs
 }
 
 type Network struct {
-	Layers       []Layer
-	LearningRate float64
+	Layers       	[]Layer
+	LearningRate 	float64
 }
 
 func NewNeuron(inputSize int) Neuron {
@@ -47,8 +48,8 @@ func NewNeuron(inputSize int) Neuron {
 	return Neuron{
 		Weights: weights,
 		Bias:    0,
-    WeightsPoints: make([]plotter.XYs, inputSize),
-    PreviousWeightUpdates: make([]float64, inputSize),
+   	WeightsPoints: make([]plotter.XYs, inputSize),
+    	PreviousWeightUpdates: make([]float64, inputSize),
 	}
 }
 
@@ -118,8 +119,9 @@ func (l *Layer) Backward(prevOutputs []float64, target []float64, nextLayer *Lay
 		neuron.Delta = err * sigmoidDerivative(neuron.Output)
 
 		for j := range neuron.Weights {
-			neuron.Weights[j] += learningRate * neuron.Delta * prevOutputs[j]
-			change := learningRate*neuron.Delta*prevOutputs[j] + l.Momentum*neuron.PreviousWeightUpdates[j]
+			normal_delta := learningRate * neuron.Delta * prevOutputs[j]
+			momentum := l.Momentum * neuron.PreviousWeightUpdates[j]
+			change := normal_delta + momentum
 			neuron.Weights[j] += change
 			neuron.PreviousWeightUpdates[j] = change
 
@@ -127,7 +129,6 @@ func (l *Layer) Backward(prevOutputs []float64, target []float64, nextLayer *Lay
 			neuron.Bias += biasChange
 			neuron.PreviousBiasUpdate = biasChange
 		}
-		neuron.Bias += learningRate * neuron.Delta
 	}
 
 	l.MsePoints = append(l.MsePoints, plotter.XY{
@@ -211,19 +212,6 @@ func main() {
 			}
 		}
 
-		for _, layer := range net.Layers {
-			layerError := 0.0
-			for i := 0; i < len(inputs); i++ {
-				output := net.Predict(inputs[i])
-				err := targets[i] - output[0]
-				layerError += err * err
-			}
-			layer.EpochMsePoints = append(layer.EpochMsePoints, plotter.XY{
-				X: float64(epoch),
-				Y: layerError / float64(len(inputs)),
-			})
-		}
-
 		totalErrorPoints = append(totalErrorPoints, plotter.XY{X: float64(epoch), Y: totalError})
 		accPoints = append(accPoints, plotter.XY{X: float64(epoch), Y: float64(acc) / float64(len(inputs))})
 
@@ -232,7 +220,7 @@ func main() {
 		}
 
 		if totalError < 0.01 {
-			fmt.Printf("Early stopping at epoch %d\n", epoch)
+			fmt.Printf("Zatrzymanie na epoce: %d\n", epoch)
 			break
 		}
 	}
